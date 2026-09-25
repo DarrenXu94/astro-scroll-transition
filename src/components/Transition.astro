@@ -2,32 +2,46 @@
 import { Image } from "astro:assets";
 
 const {
+  // Scroll distance before the first image transition begins.
   scrollStartHeight = "0vh",
+  // Scroll distance after the final image transition ends.
   scrollEndHeight = "0vh",
+  // Optional explicit wrapper height; otherwise it is calculated from the other props.
   containerHeight,
+  // Image paths shown in sequence during the scroll transition.
   images = [],
-  transitionHold = "100vh",
-  transitionDistance = "100vh",
+  // Scroll distance spent holding each image before the next fade begins.
+  transitionHold = "25vh",
+  // Scroll distance used to fade from one image to the next.
+  transitionDistance = "75vh",
 } = Astro.props;
 
 const transitionCount = Math.max(images.length - 1, 0);
 const dynamicContainerHeight =
   containerHeight ??
   `calc(100vh + ${scrollStartHeight} + ${transitionCount} * (${transitionDistance} + ${transitionHold}) + ${scrollEndHeight})`;
+
+const getImageName = (imagePath: string) => {
+  const pathWithoutQuery = imagePath.split(/[?#]/)[0];
+  const fileName = pathWithoutQuery.split("/").pop() ?? "image";
+
+  return fileName.replace(/\.[^/.]+$/, "");
+};
 ---
 
 <div
   class="transition-wrapper"
-  data-scrollStartHeight={scrollStartHeight}
-  data-scrollEndHeight={scrollEndHeight}
-  data-transitionHold={transitionHold}
-  data-transitionDistance={transitionDistance}
+  data-scroll-start-height={scrollStartHeight}
+  data-scroll-end-height={scrollEndHeight}
+  data-transition-hold={transitionHold}
+  data-transition-distance={transitionDistance}
   style={`height: ${dynamicContainerHeight};`}
 >
   {
-    images.map((_, index: number) => (
+    images.map((imagePath: string, index: number) => (
       <div
         class="content"
+        id={`content-${getImageName(imagePath)}-${index}`}
         style={`--content-index: ${index}; --scroll-start: ${scrollStartHeight}; --transition-distance: ${transitionDistance}; --transition-hold: ${transitionHold};`}
       >
         <slot name={`content-${index}`} />
@@ -90,7 +104,8 @@ const dynamicContainerHeight =
     const section = transitionWrapper.getBoundingClientRect();
     const scrollRange = transitionWrapper.offsetHeight - window.innerHeight;
     const startOffset = getHeightInPixels(scrollStartHeight);
-    const animationRange = Math.max(scrollRange - startOffset, 0);
+    const endOffset = getHeightInPixels(scrollEndHeight);
+    const animationRange = Math.max(scrollRange - startOffset - endOffset, 0);
     const animationProgress = animationRange
       ? (-section.top - startOffset) / animationRange
       : 0;
@@ -116,8 +131,12 @@ const dynamicContainerHeight =
           ? transitionIndex + segmentProgress / fadeDistance
           : transitionIndex + 1;
 
+    const imageOpacities = transitionImages.map((_, index) =>
+      Math.max(1 - Math.abs(imagePosition - index), 0),
+    );
+
     transitionImages.forEach((image, index) => {
-      image.style.opacity = `${Math.max(1 - Math.abs(imagePosition - index), 0)}`;
+      image.style.opacity = `${imageOpacities[index]}`;
     });
 
     const activeContentIndex = Math.min(
