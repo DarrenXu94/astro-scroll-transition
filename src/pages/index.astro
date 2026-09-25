@@ -1,17 +1,54 @@
 ---
-
+import Transition from "../components/Transition.astro";
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro</title>
+  </head>
+  <body>
+    <h1>Astro</h1>
+    <div class="top-section"></div>
+    <Transition images={["/blue.jpg", "/red.jpg", "/blue.jpg"]}>
+      <div slot="content-0">
+        <div class="text-content">
+          <h2>First Content</h2>
+          <p>This is the first content section.</p>
+        </div>
+      </div>
+      <div slot="content-1">
+        <div class="text-content">
+          <h2>Second Content</h2>
+          <p>This is the second content section.</p>
+        </div>
+      </div>
+      <div slot="content-2">
+        <div class="text-content">
+          <h2>Third Content</h2>
+          <p>This is the third content section.</p>
+        </div>
+      </div>
+    </Transition>
+    <div class="after-section">After section</div>
+  </body>
 </html>
+
+<style is:global>
+  .top-section,
+  .after-section {
+    height: 100vh;
+  }
+
+  .text-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+</style>

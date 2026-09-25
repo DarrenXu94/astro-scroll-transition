@@ -1,0 +1,174 @@
+---
+import { Image } from "astro:assets";
+
+const {
+  scrollStartHeight = "0vh",
+  scrollEndHeight = "0vh",
+  containerHeight,
+  images = [],
+  transitionHold = "100vh",
+  transitionDistance = "100vh",
+} = Astro.props;
+
+const transitionCount = Math.max(images.length - 1, 0);
+const dynamicContainerHeight =
+  containerHeight ??
+  `calc(100vh + ${scrollStartHeight} + ${transitionCount} * (${transitionDistance} + ${transitionHold}) + ${scrollEndHeight})`;
+---
+
+<div
+  class="transition-wrapper"
+  data-scrollStartHeight={scrollStartHeight}
+  data-scrollEndHeight={scrollEndHeight}
+  data-transitionHold={transitionHold}
+  data-transitionDistance={transitionDistance}
+  style={`height: ${dynamicContainerHeight};`}
+>
+  {
+    images.map((_, index: number) => (
+      <div
+        class="content"
+        style={`--content-index: ${index}; --scroll-start: ${scrollStartHeight}; --transition-distance: ${transitionDistance}; --transition-hold: ${transitionHold};`}
+      >
+        <slot name={`content-${index}`} />
+      </div>
+    ))
+  }
+
+  {
+    images.map((imagePath: string) => (
+      <Image
+        class="transition-image"
+        src={imagePath}
+        alt=""
+        width={600}
+        height={400}
+      />
+    ))
+  }
+</div>
+
+<script>
+  const transitionWrapper = document.querySelector<HTMLElement>(
+    ".transition-wrapper",
+  );
+  const transitionImages = Array.from(
+    document.querySelectorAll<HTMLElement>(".transition-image"),
+  );
+  const transitionContent = Array.from(
+    document.querySelectorAll<HTMLElement>(".content"),
+  );
+
+  const scrollStartHeight =
+    transitionWrapper?.dataset.scrollStartHeight || "100vh";
+  const scrollEndHeight = transitionWrapper?.dataset.scrollEndHeight || "100vh";
+
+  const getHeightInPixels = (height: string) => {
+    if (height.endsWith("vh")) {
+      return (Number.parseFloat(height) / 100) * window.innerHeight;
+    }
+
+    if (height.endsWith("vw")) {
+      return (Number.parseFloat(height) / 100) * window.innerWidth;
+    }
+
+    return Number.parseFloat(height);
+  };
+
+  const transitionHold = Math.max(
+    getHeightInPixels(transitionWrapper?.dataset.transitionHold || "0"),
+    0,
+  );
+  const transitionDistance = Math.max(
+    getHeightInPixels(transitionWrapper?.dataset.transitionDistance || "100vh"),
+    0,
+  );
+
+  const updateOpacity = () => {
+    if (!transitionWrapper || transitionImages.length === 0) return;
+
+    const section = transitionWrapper.getBoundingClientRect();
+    const scrollRange = transitionWrapper.offsetHeight - window.innerHeight;
+    const startOffset = getHeightInPixels(scrollStartHeight);
+    const animationRange = Math.max(scrollRange - startOffset, 0);
+    const animationProgress = animationRange
+      ? (-section.top - startOffset) / animationRange
+      : 0;
+    const scrollPercent = Math.min(Math.max(animationProgress, 0), 1);
+    const transitionCount = transitionImages.length - 1;
+    const fadeDistance = transitionCount ? transitionDistance : 0;
+    const segmentDistance = fadeDistance + transitionHold;
+    const scrollDistance = scrollPercent * animationRange;
+    const imageProgress = segmentDistance
+      ? scrollDistance / segmentDistance
+      : 0;
+    const transitionIndex = Math.min(
+      Math.floor(imageProgress),
+      transitionImages.length - 2,
+    );
+    const segmentProgress = segmentDistance
+      ? scrollDistance - transitionIndex * segmentDistance
+      : 0;
+    const imagePosition =
+      transitionImages.length === 1
+        ? 0
+        : segmentProgress < fadeDistance && fadeDistance
+          ? transitionIndex + segmentProgress / fadeDistance
+          : transitionIndex + 1;
+
+    transitionImages.forEach((image, index) => {
+      image.style.opacity = `${Math.max(1 - Math.abs(imagePosition - index), 0)}`;
+    });
+
+    const activeContentIndex = Math.min(
+      Math.max(Math.round(imagePosition), 0),
+      transitionContent.length - 1,
+    );
+
+    transitionContent.forEach((content, index) => {
+      const isActive = index === activeContentIndex;
+      content.classList.toggle("active", isActive);
+      content.style.zIndex = isActive ? "2" : "1";
+      content.style.pointerEvents = isActive ? "auto" : "none";
+      content.inert = !isActive;
+      content.setAttribute("aria-hidden", `${!isActive}`);
+    });
+  };
+
+  window.addEventListener("scroll", updateOpacity, { passive: true });
+  updateOpacity();
+</script>
+
+<style>
+  .transition-wrapper {
+    position: relative;
+    display: grid;
+
+    .transition-image {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      height: 100vh;
+      object-fit: cover;
+      grid-area: 1 / 1;
+      align-self: start;
+      z-index: 0;
+    }
+
+    .content {
+      grid-area: 1 / 1;
+      z-index: 1;
+      position: relative;
+      pointer-events: none;
+      padding-top: calc(
+        var(--scroll-start) + var(--content-index) *
+          (var(--transition-distance) + var(--transition-hold))
+      );
+
+      &.active {
+        z-index: 2;
+        pointer-events: auto;
+      }
+    }
+  }
+</style>
