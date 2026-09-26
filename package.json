@@ -1,17 +1,31 @@
 {
-  "name": "capricious-corot",
+  "name": "astro-scroll-transition",
+  "description": "Scroll-driven image transitions for Astro.",
   "type": "module",
   "version": "0.0.1",
+  "exports": {
+    "./Transition.astro": "./src/components/Transition.astro"
+  },
+  "files": [
+    "src/components/Transition.astro",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "astro dev",
+    "demo": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "prepublishOnly": "npm run build",
+    "pack:dry-run": "npm pack --dry-run",
     "astro": "astro"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "astro": ">=5.0.0"
+  },
+  "devDependencies": {
     "astro": "^7.3.2"
   },
   "allowScripts": {
