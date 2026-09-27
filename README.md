@@ -1,5 +1,8 @@
 # Astro Scroll Transition
 
+[![NPM](https://nodei.co/npm/astro-scroll-transition.svg?style=shields&data=v,u)](https://nodei.co/npm/astro-scroll-transition/)
+
+
 A scroll-driven image transition component for Astro. Import the `.astro` component, provide an ordered list of images, and add matching named slots for the content shown with each image.
 
 ## Install
